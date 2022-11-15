@@ -128,7 +128,7 @@
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature = "std"))]
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
 // Support for various common crates. These are primarily to get users off the ground and build some
@@ -158,7 +158,9 @@ use core::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroU128, NonZeroU16,
         NonZeroU32, NonZeroU64, NonZeroU8,
     },
-    ops, ptr, slice,
+    ops,
+    ptr::{self},
+    slice,
 };
 use ptr_meta::PtrExt;
 #[cfg(all(feature = "simdutf8", not(feature = "verbose")))]
@@ -194,7 +196,7 @@ impl<T: std::error::Error + 'static> Error for T {
 }
 
 /// The type used for boxing errors.
-#[cfg(not(feature = "std"))]
+#[cfg(feature = "alloc")]
 pub type ErrorBox<E> = alloc::boxed::Box<E>;
 
 /// The type used for boxing errors.
@@ -636,17 +638,22 @@ pub struct StructCheckError {
     /// The name of the struct field that was invalid
     pub field_name: &'static str,
     /// The error that occurred while validating the field
+    #[cfg(any(feature = "alloc", feature = "std"))]
     pub inner: ErrorBox<dyn Error>,
 }
 
 impl fmt::Display for StructCheckError {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
+        #[cfg(any(feature = "alloc", feature = "std"))]
+        return write!(
             f,
             "check failed for struct member {}: {}",
             self.field_name, self.inner
-        )
+        );
+
+        #[cfg(not(any(feature = "alloc", feature = "std")))]
+        return write!(f, "check failed for struct member {}", self.field_name);
     }
 }
 
@@ -659,17 +666,26 @@ pub struct TupleStructCheckError {
     /// The index of the struct field that was invalid
     pub field_index: usize,
     /// The error that occurred while validating the field
+    #[cfg(any(feature = "alloc", feature = "std"))]
     pub inner: ErrorBox<dyn Error>,
 }
 
 impl fmt::Display for TupleStructCheckError {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
+        #[cfg(any(feature = "alloc", feature = "std"))]
+        return write!(
             f,
             "check failed for tuple struct member {}: {}",
             self.field_index, self.inner
-        )
+        );
+
+        #[cfg(not(any(feature = "alloc", feature = "std")))]
+        return write!(
+            f,
+            "check failed for tuple struct member {}",
+            self.field_index
+        );
     }
 }
 
@@ -737,15 +753,19 @@ impl<T: CheckBytes<C>, C: ?Sized> CheckBytes<C> for ops::Range<T> {
         value: *const Self,
         context: &mut C,
     ) -> Result<&'a Self, Self::Error> {
-        T::check_bytes(ptr::addr_of!((*value).start), context).map_err(|error| {
+        T::check_bytes(ptr::addr_of!((*value).start), context).map_err(|_error| {
             StructCheckError {
                 field_name: "start",
-                inner: ErrorBox::new(error),
+                #[cfg(any(feature = "alloc", feature = "std"))]
+                inner: ErrorBox::new(_error),
             }
         })?;
-        T::check_bytes(ptr::addr_of!((*value).end), context).map_err(|error| StructCheckError {
-            field_name: "end",
-            inner: ErrorBox::new(error),
+        T::check_bytes(ptr::addr_of!((*value).end), context).map_err(|_error| {
+            StructCheckError {
+                field_name: "end",
+                #[cfg(any(feature = "alloc", feature = "std"))]
+                inner: ErrorBox::new(_error),
+            }
         })?;
         Ok(&*value)
     }
@@ -760,10 +780,11 @@ impl<T: CheckBytes<C>, C: ?Sized> CheckBytes<C> for ops::RangeFrom<T> {
         context: &mut C,
     ) -> Result<&'a Self, Self::Error> {
         let bytes = value.cast::<u8>();
-        T::check_bytes(ptr::addr_of!((*value).start), context).map_err(|error| {
+        T::check_bytes(ptr::addr_of!((*value).start), context).map_err(|_error| {
             StructCheckError {
                 field_name: "start",
-                inner: ErrorBox::new(error),
+                #[cfg(any(feature = "alloc", feature = "std"))]
+                inner: ErrorBox::new(_error),
             }
         })?;
         Ok(&*bytes.cast())
@@ -787,9 +808,12 @@ impl<T: CheckBytes<C>, C: ?Sized> CheckBytes<C> for ops::RangeTo<T> {
         value: *const Self,
         context: &mut C,
     ) -> Result<&'a Self, Self::Error> {
-        T::check_bytes(ptr::addr_of!((*value).end), context).map_err(|error| StructCheckError {
-            field_name: "end",
-            inner: ErrorBox::new(error),
+        T::check_bytes(ptr::addr_of!((*value).end), context).map_err(|_error| {
+            StructCheckError {
+                field_name: "end",
+                #[cfg(any(feature = "alloc", feature = "std"))]
+                inner: ErrorBox::new(_error),
+            }
         })?;
         Ok(&*value)
     }
@@ -803,8 +827,10 @@ impl<T: CheckBytes<C>, C: ?Sized> CheckBytes<C> for ops::RangeToInclusive<T> {
         value: *const Self,
         context: &mut C,
     ) -> Result<&'a Self, Self::Error> {
+        #[allow(unused)]
         T::check_bytes(ptr::addr_of!((*value).end), context).map_err(|error| StructCheckError {
             field_name: "end",
+            #[cfg(any(feature = "alloc", feature = "std"))]
             inner: ErrorBox::new(error),
         })?;
         Ok(&*value)

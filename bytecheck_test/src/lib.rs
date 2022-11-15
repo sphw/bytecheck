@@ -3,13 +3,10 @@
     rust_2018_idioms,
     future_incompatible,
     nonstandard_style,
-    unused,
     clippy::all
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
-
-#[cfg(not(feature = "std"))]
-extern crate alloc;
+#![cfg_attr(any(feature = "std", feautre = "alloc"), deny(unused))]
 
 #[cfg(test)]
 mod tests {
@@ -522,7 +519,7 @@ mod tests {
     #[test]
     #[cfg(feature = "std")]
     fn test_c_str() {
-        use {::bytecheck::CStrCheckError, ::std::ffi::CStr};
+        use {bytecheck::CStrCheckError, std::ffi::CStr};
 
         macro_rules! test_cases {
             ($($bytes:expr, $pat:pat,)*) => {

@@ -17,3 +17,4 @@ ptr_meta = "~0.1.4"
 default = ["std"]
 verbose = ["bytecheck/verbose"]
 std = ["bytecheck/std"]
+alloc = ["bytecheck/alloc"]
