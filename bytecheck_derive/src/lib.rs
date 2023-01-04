@@ -188,7 +188,7 @@ fn derive_check_bytes(mut input: DeriveInput) -> Result<TokenStream, Error> {
                     let field = &f.ident;
                     let ty = &f.ty;
                     let inner = if cfg!(any(feature = "alloc", feature = "std")) {
-                        quote! { inner: ErrorBox::new(e) }
+                        quote! { inner: ErrorBox::new(_e) }
                     } else {
                         quote! {}
                     };
@@ -196,7 +196,7 @@ fn derive_check_bytes(mut input: DeriveInput) -> Result<TokenStream, Error> {
                         <#ty as CheckBytes<__C>>::check_bytes(
                             ::core::ptr::addr_of!((*value).#field),
                             context
-                        ).map_err(|e| StructCheckError {
+                        ).map_err(|_e| StructCheckError {
                             field_name: stringify!(#field),
                             #inner
                         })?;
@@ -235,7 +235,7 @@ fn derive_check_bytes(mut input: DeriveInput) -> Result<TokenStream, Error> {
                     let ty = &f.ty;
                     let index = Index::from(i);
                     let inner = if cfg!(any(feature = "alloc", feature = "std")) {
-                        quote! { inner: ErrorBox::new(e) }
+                        quote! { inner: ErrorBox::new(_e) }
                     } else {
                         quote! {}
                     };
@@ -243,7 +243,7 @@ fn derive_check_bytes(mut input: DeriveInput) -> Result<TokenStream, Error> {
                         <#ty as CheckBytes<__C>>::check_bytes(
                             ::core::ptr::addr_of!((*value).#index),
                             context
-                        ).map_err(|e| TupleStructCheckError {
+                        ).map_err(|_e| TupleStructCheckError {
                             field_index: #i,
                             #inner
                         })?;
@@ -397,7 +397,7 @@ fn derive_check_bytes(mut input: DeriveInput) -> Result<TokenStream, Error> {
                             let name = &f.ident;
                             let ty = &f.ty;
                             let inner = if cfg!(any(feature = "alloc", feature = "std")) {
-                                quote! { inner: ErrorBox::new(e) }
+                                quote! { inner: ErrorBox::new(_e) }
                             } else {
                                 quote! {}
                             };
@@ -405,7 +405,7 @@ fn derive_check_bytes(mut input: DeriveInput) -> Result<TokenStream, Error> {
                                 <#ty as CheckBytes<__C>>::check_bytes(
                                     ::core::ptr::addr_of!((*value).#name),
                                     context
-                                ).map_err(|e| EnumCheckError::InvalidStruct {
+                                ).map_err(|_e| EnumCheckError::InvalidStruct {
                                     variant_name: stringify!(#variant),
                                     inner: StructCheckError {
                                         field_name: stringify!(#name),
@@ -424,7 +424,7 @@ fn derive_check_bytes(mut input: DeriveInput) -> Result<TokenStream, Error> {
                             let ty = &f.ty;
                             let index = Index::from(i + 1);
                             let inner = if cfg!(any(feature = "alloc", feature = "std")) {
-                                quote! { inner: ErrorBox::new(e) }
+                                quote! { inner: ErrorBox::new(_e) }
                             } else {
                                 quote! {}
                             };
@@ -432,7 +432,7 @@ fn derive_check_bytes(mut input: DeriveInput) -> Result<TokenStream, Error> {
                                 <#ty as CheckBytes<__C>>::check_bytes(
                                     ::core::ptr::addr_of!((*value).#index),
                                     context
-                                ).map_err(|e| EnumCheckError::InvalidTuple {
+                                ).map_err(|_e| EnumCheckError::InvalidTuple {
                                     variant_name: stringify!(#variant),
                                     inner: TupleStructCheckError {
                                         field_index: #i,
